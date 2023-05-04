@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid"
 
 import { OutlineI, OutlineItemI, PostI, SubheadingI } from "@/types/content"
 
-const formStepAtom = atom<number>(1)
+const formStepAtom = atom<number>(0)
 export const stepHandlerAtom = atom(
   (get) => get(formStepAtom),
   (_get, set, action: "inc" | "dec") =>
