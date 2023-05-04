@@ -45,8 +45,7 @@ const Step3 = () => {
     <motion.div
       variants={containerVariants}
       initial="initial"
-      exit="exit"
-      animate={step === 2 ? "animate" : "initial"}
+      exit={step === 2 ? "initial" : "exit"}
       className="flex items-center justify-center w-full h-full"
     >
       <AnimatePresence key="step-1">

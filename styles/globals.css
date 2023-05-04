@@ -69,7 +69,7 @@
     --radius: 0.5rem;
   }
   .markdown p {
-    @apply mt-3 first:mt-0;
+    @apply mt-3 leading-normal first:mt-0 dark:text-neutral-300;
   }
   .markdown ol {
     @apply flex flex-col gap-5 pl-4 my-3 list-decimal;
