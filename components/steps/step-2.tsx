@@ -18,7 +18,7 @@ import Spinner from "../ui/spinner"
 
 const containerVariants = {
   initial: {
-    opacitiy: 0,
+    opacity: 0,
     y: 20,
   },
   exit: {
@@ -49,6 +49,7 @@ const Step2 = () => {
       variants={containerVariants}
       initial="initial"
       exit={step === 1 ? "initial" : "exit"}
+      animate="animate"
       className="flex items-center justify-center w-full h-full"
     >
       <AnimatePresence key="step-1">

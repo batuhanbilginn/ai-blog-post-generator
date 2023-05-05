@@ -1,4 +1,3 @@
-import axios from "axios"
 import { atom } from "jotai"
 import { focusAtom } from "jotai-optics"
 import { splitAtom } from "jotai/utils"
@@ -6,7 +5,7 @@ import { v4 as uuidv4 } from "uuid"
 
 import { OutlineI, OutlineItemI, PostI, SubheadingI } from "@/types/content"
 
-const formStepAtom = atom<number>(0)
+const formStepAtom = atom<number>(1)
 export const stepHandlerAtom = atom(
   (get) => get(formStepAtom),
   (_get, set, action: "inc" | "dec") =>
@@ -17,7 +16,7 @@ export const postErrorAtom = atom<string>("")
 export const handlingAtom = atom<boolean>(false)
 export const handlingMessageAtom = atom((get) => {
   const step = get(formStepAtom)
-  return step === 1 ? "Generating Outline" : "Generating Post"
+  return step === 1 ? "Generating Outline..." : "Generating Post..."
 })
 export const inputAtom = atom<string>("")
 export const outlineAtom = atom<OutlineI>({
@@ -148,6 +147,8 @@ const focusedOutlineItemsAtom = focusAtom(outlineAtom, (optic) =>
 export const splittedOutlineItemsAtom = splitAtom(focusedOutlineItemsAtom)
 export const postAtom = atom<PostI>({ title: "", content: "" })
 
+const outlineChunksAtom = atom<string>("")
+
 // Handlers
 export const generateOutlineHandlerAtom = atom(null, async (get, set) => {
   const handling = get(handlingAtom)
@@ -160,18 +161,75 @@ export const generateOutlineHandlerAtom = atom(null, async (get, set) => {
   set(stepHandlerAtom, "inc")
   set(outlineAtom, { title: "", outline: [] })
   set(inputAtom, "")
+
   // Generate Outline
   try {
-    const { data } = await axios.post("/api/outline", { request: inputValue })
-    if (data?.error) {
-      console.log(data.error)
-    } else {
-      set(outlineAtom, data)
+    const response = await fetch("/api/outline", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        request: inputValue,
+      }),
+    })
+
+    if (!response.ok) {
+      console.log("Response not ok", response)
+      throw new Error(response.statusText)
     }
+
+    // This data is a ReadableStream
+    const data = response.body
+    if (!data) {
+      console.log("No data from response.", data)
+      throw new Error("No data from response.")
+    }
+
+    const reader = data.getReader()
+    const decoder = new TextDecoder()
+    let done = false
+
+    while (!done) {
+      const { value, done: doneReading } = await reader.read()
+      done = doneReading
+      const chunkValue = decoder.decode(value)
+      set(outlineChunksAtom, (prev) => prev + chunkValue)
+    }
+
+    // Parse Outline
+    const parsedOutline = JSON.parse(get(outlineChunksAtom))
+
+    // Check if there is an error
+    if (parsedOutline.message) {
+      set(outlineErrorAtom, parsedOutline.message)
+      return
+    }
+
+    // Generate IDs
+    const idGeneratedResponse = {
+      ...parsedOutline,
+      outline: parsedOutline.outline.map((outlineItem: OutlineItemI) => {
+        return {
+          ...outlineItem,
+          id: uuidv4(),
+          subheadings: outlineItem.subheadings.map((subheading) => {
+            return {
+              ...subheading,
+              id: uuidv4(),
+            }
+          }),
+        }
+      }),
+    }
+
+    // Set Outline
+    set(outlineAtom, idGeneratedResponse)
   } catch (error: any) {
-    console.log(error.response)
-    set(outlineErrorAtom, error.response.data.message)
+    console.log(error)
+    set(outlineErrorAtom, error.message)
   } finally {
+    // Stop Handling
     set(handlingAtom, false)
   }
 })
@@ -183,36 +241,68 @@ export const generatePostHandlerAtom = atom(null, async (get, set) => {
   if (handling || !outline) return
 
   set(stepHandlerAtom, "inc")
+  set(postAtom, { title: outline.title, content: "" })
   setTimeout(() => {
     // Set Handling
     set(handlingAtom, true)
   }, 100)
 
-  // Generate Outline
+  // Generate Post
   try {
-    const { data } = await axios.post("/api/post", {
-      request: {
-        ...outline,
-        outline: outline.outline.map((outlineItem) => {
-          return {
-            ...outlineItem,
-            subheadings: outlineItem.subheadings.map(
-              (subheading) => subheading.heading
-            ),
-          }
-        }),
+    const response = await fetch("/api/post", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        request: {
+          ...outline,
+          outline: outline.outline.map((outlineItem) => {
+            return {
+              ...outlineItem,
+              subheadings: outlineItem.subheadings.map(
+                (subheading) => subheading.heading
+              ),
+            }
+          }),
+        },
+      }),
     })
-    if (data?.error) {
-      console.log(data.error)
-    } else {
-      set(postAtom, { title: outline.title, content: data })
+
+    if (!response.ok) {
+      console.log("Response not ok", response)
+      throw new Error(response.statusText)
+    }
+
+    // This data is a ReadableStream
+    const data = response.body
+    if (!data) {
+      console.log("No data from response.", data)
+      throw new Error("No data from response.")
+    }
+
+    const reader = data.getReader()
+    const decoder = new TextDecoder()
+    let done = false
+
+    // Stop Handling
+    set(handlingAtom, false)
+    while (!done) {
+      console.log("Reading...")
+      const { value, done: doneReading } = await reader.read()
+      done = doneReading
+      const chunkValue = decoder.decode(value)
+      // Set Post
+      set(postAtom, (prev) => {
+        return {
+          ...prev,
+          content: prev.content + chunkValue,
+        }
+      })
     }
   } catch (error: any) {
-    console.log(error.response)
-    set(postErrorAtom, error.response.data.message)
-  } finally {
-    set(handlingAtom, false)
+    console.log(error)
+    set(postErrorAtom, error.message)
   }
 })
 

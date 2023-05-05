@@ -11,7 +11,7 @@ import Step3 from "@/components/steps/step-3"
 export default function IndexPage() {
   const step = useAtomValue(stepHandlerAtom)
   return (
-    <section className="container grid items-center gap-6 pt-6 pb-8 md:py-10">
+    <section className="container items-center pt-6 pb-8 grid gap-6 md:py-10">
       <div className="h-full">
         <AnimatePresence key="main">
           {step === 0 && <Step1 key="step-1 component" />}

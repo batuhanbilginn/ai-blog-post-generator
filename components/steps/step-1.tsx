@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef } from "react"
 import {
   generateOutlineHandlerAtom,
   inputAtom,
@@ -10,9 +11,11 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai"
 
 import { Input } from "@/components/ui/input"
 
+import { Button } from "../ui/button"
+
 const containerVariants = {
   initial: {
-    opacitiy: 1,
+    opacity: 1,
     y: 0,
   },
   exit: {
@@ -25,9 +28,13 @@ const Step1 = () => {
   const step = useAtomValue(stepHandlerAtom)
   const [inputValue, setInputValue] = useAtom(inputAtom)
   const generateOutlineHandler = useSetAtom(generateOutlineHandlerAtom)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const formHandler = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (inputValue.length > 10) {
+      inputRef.current?.blur()
+    }
     await generateOutlineHandler()
   }
   return (
@@ -49,7 +56,7 @@ const Step1 = () => {
           </p>
         </div>
         {/* Input */}
-        <form onSubmit={formHandler} className="w-full mt-4">
+        <form onSubmit={formHandler} className="w-full mt-4 space-y-6">
           <Input
             value={inputValue}
             onChange={(e) => {
@@ -57,8 +64,11 @@ const Step1 = () => {
             }}
             className="w-full text-base"
             placeholder="A blog post about SpaceX..."
+            ref={inputRef}
           />
-          <button type="submit" className="hidden"></button>
+          <Button type="submit" className="w-full">
+            Create Outline
+          </Button>
         </form>
       </div>
     </motion.div>

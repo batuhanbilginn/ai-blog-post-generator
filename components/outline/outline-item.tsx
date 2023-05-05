@@ -80,7 +80,7 @@ const OutlineItem = ({
           )}
         </AnimatePresence>
 
-        <h2 className="px-2 py-1 text-xs font-bold border rounded-md cursor-move max-w-fit dark:border-white/10 dark:bg-white/5">
+        <h2 className="px-2 py-1 text-xs font-bold border cursor-move rounded-md max-w-fit dark:border-white/10 dark:bg-white/5">
           H2
         </h2>
         <input
@@ -102,7 +102,7 @@ const OutlineItem = ({
               subheadings: newValue,
             }))
           }}
-          className="flex flex-col w-full gap-3 pl-4 mt-4"
+          className="flex flex-col w-full pl-4 mt-4 gap-3"
         >
           {outlineItem.subheadings.map((subheading) => (
             <Reorder.Item
@@ -134,7 +134,7 @@ const OutlineItem = ({
           key={outlineItem.id + "submenu"}
           layout
         >
-          <div className="flex items-center w-full gap-3 mt-2">
+          <div className="flex items-center w-full mt-2 gap-3">
             <Button
               onClick={() => {
                 addNewHeading(outlineItem.id)
